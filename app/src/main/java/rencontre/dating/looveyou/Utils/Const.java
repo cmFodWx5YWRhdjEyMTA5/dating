@@ -25,6 +25,7 @@ public class Const {
         public static String NAME = "name";
         public static String PICTURE = "picture";
         public static String STATUS = "status";
+        public static String FCM_PUSHING_MESSAGE = "FCM_PUSHING_MESSAGE";
         public static int notification_id = 0;
     }
 }

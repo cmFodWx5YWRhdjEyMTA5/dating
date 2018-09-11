@@ -24,6 +24,9 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.target.Target;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.List;
 
 import rencontre.dating.looveyou.Activities.DisplayActivity;
@@ -147,7 +150,7 @@ public class NotificationUtils {
         notificationManager.cancelAll();
     }
 
-    public static void MostrarNotificacion(final Context context, final Vibrator vibrator, final String titulo, final String message, String icon, final Class fragmento) {
+    public static void MostrarNotificacion(final Context context, final Vibrator vibrator, final String titulo, final String message, String icon, final JSONObject extraData, final Class fragmento) {
 
         final NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, "")
                 .setContentTitle(titulo)
@@ -157,6 +160,18 @@ public class NotificationUtils {
                 .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
         mBuilder.setSmallIcon(R.drawable.icon);
         Intent resultIntent = new Intent(context, fragmento);
+        try {
+            if(extraData.getString("notification_type").equals("new_message"))
+            {
+                resultIntent.putExtra("receiverId", extraData.getString("user_id"));
+                resultIntent.putExtra("receiverImageUrl", icon);
+                resultIntent.putExtra("receiverName", extraData.getString("user_name"));
+                resultIntent.putExtra("contact_id",extraData.getString("contact_id"));
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         mBuilder.setContentIntent(resultPendingIntent);
 

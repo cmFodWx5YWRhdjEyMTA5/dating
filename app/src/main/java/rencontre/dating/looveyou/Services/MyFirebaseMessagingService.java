@@ -15,6 +15,7 @@ import rencontre.dating.looveyou.Activities.ChatActivity;
 import rencontre.dating.looveyou.Activities.ChatHistoryActivity;
 import rencontre.dating.looveyou.Activities.DisplayActivity;
 import rencontre.dating.looveyou.MainActivity;
+import rencontre.dating.looveyou.Utils.Const;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
@@ -62,15 +63,32 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             String icon = data.getString("icon");
             JSONObject custom_data = data.getJSONObject("custom_data");
 
-            Class fragment;
-            String notification_type = custom_data.getString("notification_type");
-            if (notification_type.equals("new_message")) {
-                fragment = ChatHistoryActivity.class;
+            if(!NotificationUtils.isAppIsInBackground(getApplicationContext()))
+            {
+                Intent pushNotification = new Intent(Const.Params.FCM_PUSHING_MESSAGE);
+                pushNotification.putExtra("data", data.toString());
+                sendBroadcast(pushNotification);
             }else{
-                fragment = DisplayActivity.class;
-            }
+                Class fragment;
+                String notification_type = custom_data.getString("notification_type");
+                switch (notification_type) {
+                    case "new_message":
+                        fragment = ChatActivity.class;
+                        break;
+                    case "visitor":
+                        String username = custom_data.getString("user_name");
+                        if (username.equals(""))
+                            username = "Soemone";
+                        message = username + "has visited your profile.";
+                        fragment = DisplayActivity.class;
+                        break;
+                    default:
+                        fragment = DisplayActivity.class;
+                        break;
+                }
 
-            NotificationUtils.MostrarNotificacion(getApplicationContext(), vibrator, title, message, icon, fragment);
+                NotificationUtils.MostrarNotificacion(getApplicationContext(), vibrator, title, message, icon,custom_data, fragment);
+            }
 
         } catch (JSONException e) {
             Log.e(TAG, "Json Exception: " + e.getMessage());

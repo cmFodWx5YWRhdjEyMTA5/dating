@@ -1,10 +1,13 @@
 package rencontre.dating.looveyou.Activities;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -35,6 +38,7 @@ import rencontre.dating.looveyou.Applications.ApplicationSingleTon;
 import rencontre.dating.looveyou.Models.ChatMessage;
 import rencontre.dating.looveyou.Networking.Endpoints;
 import rencontre.dating.looveyou.R;
+import rencontre.dating.looveyou.Services.NotificationUtils;
 import rencontre.dating.looveyou.Utils.AndroidSslContext;
 import rencontre.dating.looveyou.Utils.Const;
 import rencontre.dating.looveyou.Utils.HelperFunctions;
@@ -67,6 +71,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     private SwipyRefreshLayout swipeContainer;
     private TextView userName, userStatus;
     private ImageView userImage;
+    private BroadcastReceiver receiver;
 
     private String onlineStatus;
     private boolean isTyping = false;
@@ -346,6 +351,40 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
 
         getChatHistory("");
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if(intent.getAction().equals(Const.Params.FCM_PUSHING_MESSAGE))
+                {
+                    try {
+                        String data_ = intent.getStringExtra("data");
+                        JSONObject data = new JSONObject(data_);
+                        JSONObject custom_data = data.getJSONObject("custom_data");
+
+                        if(custom_data.getString("notification_type").equals("new_message"))
+                        {
+                            if(!receiverId.equals(custom_data.getString("user_id")))
+                            {
+                                String title = data.getString("title");
+                                String message = data.getString("body");
+                                String icon = data.getString("icon");
+                                NotificationUtils.MostrarNotificacion(ChatActivity.this, vibrator, title, message, icon,custom_data, ChatActivity.class);
+                            }
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(receiver, new IntentFilter(Const.Params.FCM_PUSHING_MESSAGE));
     }
 
     private void InitSockets(){
@@ -948,6 +987,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     protected void onDestroy() {
         super.onDestroy();
         mSocket.disconnect();
+        unregisterReceiver(receiver);
         mSocket.off("new_message_received", onNewMessage)
                 .off("connected", onConnected)
                 .off("user_online", onUserOnline)

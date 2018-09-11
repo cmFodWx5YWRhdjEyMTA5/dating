@@ -2,7 +2,10 @@ package rencontre.dating.looveyou.Activities;
 
 import android.app.Activity;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.RippleDrawable;
@@ -10,6 +13,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Vibrator;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
@@ -34,6 +38,7 @@ import com.bumptech.glide.Glide;
 import com.google.gson.JsonObject;
 import com.koushikdutta.async.future.FutureCallback;
 import com.koushikdutta.ion.Ion;
+
 import rencontre.dating.looveyou.Adapters.SpotLightAdapter;
 import rencontre.dating.looveyou.Applications.ApplicationSingleTon;
 import rencontre.dating.looveyou.Fragments.DisplayFragment;
@@ -43,6 +48,7 @@ import rencontre.dating.looveyou.Models.NotifyProfileRecieved;
 import rencontre.dating.looveyou.Models.userDetail;
 import rencontre.dating.looveyou.Networking.Endpoints;
 import rencontre.dating.looveyou.R;
+import rencontre.dating.looveyou.Services.NotificationUtils;
 import rencontre.dating.looveyou.Services.PushNotificationService;
 import rencontre.dating.looveyou.Utils.BusProvider;
 import rencontre.dating.looveyou.Utils.Const;
@@ -65,14 +71,16 @@ public class DisplayActivity extends AppCompatActivity
     private String id, token;
     private TextView user_name, superPowerActive, credit;
     private ImageView user_image, user_settings, popularity_level;
+    private BroadcastReceiver receiver;
 
     private static DisplayActivity _Activity;
 
     /**
      * The singleton class for the default activity
+     *
      * @return the activity instance
      */
-    public static DisplayActivity getInstance(){
+    public static DisplayActivity getInstance() {
         return _Activity;
     }
 
@@ -104,7 +112,7 @@ public class DisplayActivity extends AppCompatActivity
         Log.d("TOKEN", token);
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close){
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
 
             /** Called when a drawer has settled in a completely closed state. */
             public void onDrawerClosed(View view) {
@@ -165,7 +173,6 @@ public class DisplayActivity extends AppCompatActivity
         });
 
 
-
         Me = (Button) findViewById(R.id.ripple_effect);
         /**
          * Click handler for Me button in Nav view
@@ -203,6 +210,31 @@ public class DisplayActivity extends AppCompatActivity
         //Starting the push notification service.
         Intent notificationService = new Intent(DisplayActivity.this, PushNotificationService.class);
         startService(notificationService);
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (intent.getAction().equals(Const.Params.FCM_PUSHING_MESSAGE)) {
+                    try {
+                        String data_ = intent.getStringExtra("data");
+                        JSONObject data = new JSONObject(data_);
+                        JSONObject custom_data = data.getJSONObject("custom_data");
+
+                        if (custom_data.getString("notification_type").equals("new_message")) {
+
+                            String title = data.getString("title");
+                            String message = data.getString("body");
+                            String icon = data.getString("icon");
+                            unregisterReceiver(receiver);
+                            NotificationUtils.MostrarNotificacion(DisplayActivity.this, vibrator, title, message, icon, custom_data, ChatActivity.class);
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
     }
 
     private void gotoFragment() {
@@ -234,7 +266,7 @@ public class DisplayActivity extends AppCompatActivity
                              * Logging out user if authentication fails, if user has logged in his/her account
                              * on some other device as well.
                              */
-                            if(HelperFunctions.IsUserAuthenticated(jsonObject, DisplayActivity.this)){
+                            if (HelperFunctions.IsUserAuthenticated(jsonObject, DisplayActivity.this)) {
                                 return;
                             }
 
@@ -324,9 +356,15 @@ public class DisplayActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(receiver);
+    }
+
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public void onClick (View view) {
+    public void onClick(View view) {
         // Handle navigation view item clicks here.
         int id = view.getId();
 
@@ -355,14 +393,14 @@ public class DisplayActivity extends AppCompatActivity
             transaction.replace(R.id.display_container, newFragment);
 
             transaction.commit();
-        }else if (id==R.id.nav_encounter){
+        } else if (id == R.id.nav_encounter) {
             DisplayFragment newFragment = new DisplayFragment();
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             transaction.replace(R.id.display_container, newFragment);
 
             transaction.commit();
-        }else if (id==R.id.nav_activity){
-            startActivity(new Intent(this,ActivityPageActivity.class));
+        } else if (id == R.id.nav_activity) {
+            startActivity(new Intent(this, ActivityPageActivity.class));
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -390,8 +428,8 @@ public class DisplayActivity extends AppCompatActivity
         }
 
         //Some purchase was made in the super power activity.
-        if(requestCode == SUPERPOWER_REQUEST){
-            if(resultCode == RESULT_OK){
+        if (requestCode == SUPERPOWER_REQUEST) {
+            if (resultCode == RESULT_OK) {
 
             }
         }
@@ -401,6 +439,7 @@ public class DisplayActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
         BusProvider.getInstance().register(this);
+        registerReceiver(receiver, new IntentFilter(Const.Params.FCM_PUSHING_MESSAGE));
         //ChatManager.Init(DisplayActivity.this);
     }
 
@@ -411,7 +450,7 @@ public class DisplayActivity extends AppCompatActivity
     }
 
     @Override
-    protected void onStop(){
+    protected void onStop() {
         super.onStop();
         //ChatManager.Destroy();
     }
@@ -421,7 +460,7 @@ public class DisplayActivity extends AppCompatActivity
      * navigation bar.
      * Author ANURAG
      */
-    private void getSpotLightData(){
+    private void getSpotLightData() {
         JsonObject json = new JsonObject();
         json.addProperty(Const.Params.ID, id);
         json.addProperty(Const.Params.TOKEN, token);
@@ -432,18 +471,18 @@ public class DisplayActivity extends AppCompatActivity
                 .setCallback(new FutureCallback<JsonObject>() {
                     @Override
                     public void onCompleted(Exception e, JsonObject result) {
-                        if(result == null)
+                        if (result == null)
                             return;
 
-                        ArrayList<userDetail> userDetailArrayList  = new ArrayList<userDetail>();
-                        try{
+                        ArrayList<userDetail> userDetailArrayList = new ArrayList<userDetail>();
+                        try {
                             JSONObject data = new JSONObject(result.toString());
 
                             /**
                              * Logging out user if authentication fails, if user has logged in his/her account
                              * on some other device as well.
                              */
-                            if(HelperFunctions.IsUserAuthenticated(data, DisplayActivity.this)){
+                            if (HelperFunctions.IsUserAuthenticated(data, DisplayActivity.this)) {
                                 return;
                             }
 
@@ -455,7 +494,7 @@ public class DisplayActivity extends AppCompatActivity
 
 
                             userDetailArrayList.add(me);
-                            for(int i = 0 ; i < arr.length() ; ++i){
+                            for (int i = 0; i < arr.length(); ++i) {
                                 JSONObject ob = arr.getJSONObject(i);
                                 String name = ob.getString("name");
                                 JSONObject ob1 = ob.getJSONObject("profile_picture_url");
@@ -464,7 +503,7 @@ public class DisplayActivity extends AppCompatActivity
                                 userDetail user = new userDetail();
                                 user.setName(name);
                                 user.setPicture(url);
-                                user.setId(""+id);
+                                user.setId("" + id);
                                 userDetailArrayList.add(user);
                             }
                             RecyclerView spot = (RecyclerView) findViewById(R.id.spotlight);
@@ -486,7 +525,7 @@ public class DisplayActivity extends AppCompatActivity
                             spot.setVisibility(View.VISIBLE);
                             addImage.setVisibility(View.VISIBLE);
                             Me.setVisibility(View.VISIBLE);
-                        }catch (JSONException eq){
+                        } catch (JSONException eq) {
                             //Toast.makeText(getApplicationContext(), eq.toString() , Toast.LENGTH_LONG).show();
                         }
                     }
@@ -496,19 +535,20 @@ public class DisplayActivity extends AppCompatActivity
     /**
      * This function updates the user's credits count after any purchase or deduction.
      */
-    public void UpdateCreditsCount(int newCredits){
+    public void UpdateCreditsCount(int newCredits) {
         credit.setText("" + newCredits);
     }
 
     /**
      * This function updates the super power status
+     *
      * @param string new status
      */
-    public void UpdateSuperPowerStatus(String string, boolean active){
+    public void UpdateSuperPowerStatus(String string, boolean active) {
         superPowerActive.setText(string);
-        if(active){
+        if (active) {
             superPowerActive.setTextColor(getResources().getColor(R.color.white));
-        }else{
+        } else {
             superPowerActive.setTextColor(Color.RED);
         }
     }
@@ -516,25 +556,24 @@ public class DisplayActivity extends AppCompatActivity
 
     /**
      * This function recursively plays the ripple effect on the view
+     *
      * @param view on which ripple animation has to be played.
      */
-    private void ForceRippleAnimation(final View view){
-        if(!PlayRippleEffect){
+    private void ForceRippleAnimation(final View view) {
+        if (!PlayRippleEffect) {
             return;
         }
         Drawable background = view.getBackground();
-        if(Build.VERSION.SDK_INT >= 21 && background instanceof RippleDrawable)
-        {
+        if (Build.VERSION.SDK_INT >= 21 && background instanceof RippleDrawable) {
             final RippleDrawable rippleDrawable = (RippleDrawable) background;
 
             rippleDrawable.setState(new int[]{android.R.attr.state_pressed, android.R.attr.state_enabled});
 
             Handler handler = new Handler();
 
-            handler.postDelayed(new Runnable()
-            {
-                @Override public void run()
-                {
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
                     rippleDrawable.setState(new int[]{});
                     ForceRippleAnimation(view);
                 }
