@@ -29,6 +29,7 @@ import org.json.JSONObject;
 
 import java.util.List;
 
+import rencontre.dating.looveyou.Activities.ChatActivity;
 import rencontre.dating.looveyou.Activities.DisplayActivity;
 import rencontre.dating.looveyou.Applications.ApplicationSingleTon;
 import rencontre.dating.looveyou.MainActivity;
@@ -161,12 +162,11 @@ public class NotificationUtils {
         mBuilder.setSmallIcon(R.drawable.icon);
         Intent resultIntent = new Intent(context, fragmento);
         try {
-            if(extraData.getString("notification_type").equals("new_message"))
-            {
+            if (extraData.getString("notification_type").equals("new_message")) {
                 resultIntent.putExtra("receiverId", extraData.getString("user_id"));
                 resultIntent.putExtra("receiverImageUrl", icon);
                 resultIntent.putExtra("receiverName", extraData.getString("user_name"));
-                resultIntent.putExtra("contact_id",extraData.getString("contact_id"));
+                resultIntent.putExtra("contact_id", extraData.getString("contact_id"));
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -185,6 +185,72 @@ public class NotificationUtils {
 
         vibrator.vibrate(500);
         Const.Params.notification_id++;
+
+    }
+
+    public static void MostrarNotificacion(final Context context, final JSONObject data) {
+        try {
+            Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+            String title = data.getString("title");
+            String message = data.getString("body");
+            String icon = data.getString("icon");
+            JSONObject custom_data = data.getJSONObject("custom_data");
+            Class fragment;
+            String notification_type = custom_data.getString("notification_type");
+            String username = custom_data.getString("user_name");
+            switch (notification_type) {
+                case "new_message":
+                    fragment = ChatActivity.class;
+                    break;
+                case "visitor":
+                    if (username.equals(""))
+                        username = "Soemone";
+                    message = username + " has visited your profile.";
+                    fragment = DisplayActivity.class;
+                    break;
+                case "liked":
+                    if (username.equals(""))
+                        username = "Soemone";
+                    message = username + " has liked your profile.";
+                    fragment = DisplayActivity.class;
+                    break;
+                default:
+                    fragment = DisplayActivity.class;
+                    break;
+            }
+            final NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, "")
+                    .setContentTitle(title)
+                    .setContentText(message)
+                    .setAutoCancel(true)
+                    .setPriority(Notification.PRIORITY_MAX)
+                    .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+            mBuilder.setSmallIcon(R.drawable.icon);
+            Intent resultIntent = new Intent(context, fragment);
+
+            if (custom_data.getString("notification_type").equals("new_message")) {
+                resultIntent.putExtra("receiverId", custom_data.getString("user_id"));
+                resultIntent.putExtra("receiverImageUrl", icon);
+                resultIntent.putExtra("receiverName", custom_data.getString("user_name"));
+                resultIntent.putExtra("contact_id", custom_data.getString("contact_id"));
+            }
+
+            resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            mBuilder.setContentIntent(resultPendingIntent);
+
+            Notification notification = new NotificationCompat.BigTextStyle(mBuilder)
+                    .bigText(message)
+                    .setBigContentTitle(title)
+                    .build();
+
+            NotificationManager notificationmanager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
+            notificationmanager.notify(Const.Params.notification_id, notification);
+
+            vibrator.vibrate(500);
+            Const.Params.notification_id++;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
     }
 }

@@ -2,10 +2,13 @@ package rencontre.dating.looveyou.Activities;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -31,6 +34,7 @@ import rencontre.dating.looveyou.Adapters.ProfileImagesViewPagerAdapter;
 import rencontre.dating.looveyou.Models.InterestInfo;
 import rencontre.dating.looveyou.Networking.Endpoints;
 import rencontre.dating.looveyou.R;
+import rencontre.dating.looveyou.Services.NotificationUtils;
 import rencontre.dating.looveyou.Utils.Const;
 import rencontre.dating.looveyou.Utils.HelperFunctions;
 import rencontre.dating.looveyou.Utils.HelperMethods;
@@ -71,6 +75,7 @@ public class ProfileViewActivity extends AppCompatActivity implements ViewPager.
     private ImageView dislike_button, like_button, verified_image;
 
     private boolean isSpinnerSet = false;
+    private BroadcastReceiver receiver;
 
     /**
      * Other user's profile info.
@@ -159,6 +164,43 @@ public class ProfileViewActivity extends AppCompatActivity implements ViewPager.
             button_layout.setVisibility(View.GONE);
 
         }*/
+      receiver = new BroadcastReceiver() {
+          @Override
+          public void onReceive(Context context, Intent intent) {
+              Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+              if (intent.getAction().equals(Const.Params.FCM_PUSHING_MESSAGE)) {
+                  try {
+                      String data_ = intent.getStringExtra("data");
+                      JSONObject data = new JSONObject(data_);
+                      JSONObject custom_data = data.getJSONObject("custom_data");
+
+                      if (custom_data.getString("notification_type").equals("new_message")) {
+
+                          String title = data.getString("title");
+                          String message = data.getString("body");
+                          String icon = data.getString("icon");
+                          unregisterReceiver(receiver);
+                          NotificationUtils.MostrarNotificacion(ProfileViewActivity.this, vibrator, title, message, icon, custom_data, ChatActivity.class);
+                      }
+
+                  } catch (JSONException e) {
+                      e.printStackTrace();
+                  }
+              }
+          }
+      };
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(receiver, new IntentFilter(Const.Params.FCM_PUSHING_MESSAGE));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(receiver);
     }
 
     private void setUpInterestRecyclerView() {

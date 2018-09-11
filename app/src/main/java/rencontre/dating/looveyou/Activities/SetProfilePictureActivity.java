@@ -2,10 +2,14 @@ package rencontre.dating.looveyou.Activities;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -23,6 +27,7 @@ import com.koushikdutta.async.http.body.Part;
 import com.koushikdutta.ion.Ion;
 import rencontre.dating.looveyou.Networking.Endpoints;
 import rencontre.dating.looveyou.R;
+import rencontre.dating.looveyou.Services.NotificationUtils;
 import rencontre.dating.looveyou.Utils.Const;
 import rencontre.dating.looveyou.Utils.HelperMethods;
 import rencontre.dating.looveyou.Utils.SharedPreferencesUtils;
@@ -51,6 +56,7 @@ public class SetProfilePictureActivity extends AppCompatActivity{
     private ImageView image;
     private File mainFile;
     private TextView chooseAnother;
+    private BroadcastReceiver receiver;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -98,8 +104,44 @@ public class SetProfilePictureActivity extends AppCompatActivity{
 
         image = (ImageView) findViewById(R.id.profile_image);
         text = (TextView) findViewById(R.id.btn_text);
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (intent.getAction().equals(Const.Params.FCM_PUSHING_MESSAGE)) {
+                    try {
+                        String data_ = intent.getStringExtra("data");
+                        JSONObject data = new JSONObject(data_);
+                        JSONObject custom_data = data.getJSONObject("custom_data");
+
+                        if (custom_data.getString("notification_type").equals("new_message")) {
+
+                            String title = data.getString("title");
+                            String message = data.getString("body");
+                            String icon = data.getString("icon");
+                            unregisterReceiver(receiver);
+                            NotificationUtils.MostrarNotificacion(SetProfilePictureActivity.this, vibrator, title, message, icon, custom_data, ChatActivity.class);
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(receiver, new IntentFilter(Const.Params.FCM_PUSHING_MESSAGE));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(receiver);
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {

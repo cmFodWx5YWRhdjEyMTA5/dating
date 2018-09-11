@@ -1,7 +1,11 @@
 package rencontre.dating.looveyou.Activities;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.KeyEvent;
@@ -10,8 +14,14 @@ import android.view.View;
 import android.widget.Button;
 
 import com.bumptech.glide.Glide;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import rencontre.dating.looveyou.Applications.ApplicationSingleTon;
 import rencontre.dating.looveyou.R;
+import rencontre.dating.looveyou.Services.NotificationUtils;
+import rencontre.dating.looveyou.Utils.Const;
 import rencontre.dating.looveyou.Utils.SpotlightHelper;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -25,6 +35,7 @@ public class PopularityActivity extends AppCompatActivity {
     private CircleImageView p1,p2;
     private Button addMeToSpotlight;
     private Button activateSuperPower;
+    private BroadcastReceiver receiver;
     /**
      * This bool is true when credits are used to spot user into the spotlight.
      */
@@ -63,6 +74,43 @@ public class PopularityActivity extends AppCompatActivity {
                 startActivity(new Intent(PopularityActivity.this, SuperPowerActivity.class));
             }
         });
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (intent.getAction().equals(Const.Params.FCM_PUSHING_MESSAGE)) {
+                    try {
+                        String data_ = intent.getStringExtra("data");
+                        JSONObject data = new JSONObject(data_);
+                        JSONObject custom_data = data.getJSONObject("custom_data");
+
+                        if (custom_data.getString("notification_type").equals("new_message")) {
+
+                            String title = data.getString("title");
+                            String message = data.getString("body");
+                            String icon = data.getString("icon");
+                            unregisterReceiver(receiver);
+                            NotificationUtils.MostrarNotificacion(PopularityActivity.this, vibrator, title, message, icon, custom_data, ChatActivity.class);
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(receiver, new IntentFilter(Const.Params.FCM_PUSHING_MESSAGE));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(receiver);
     }
 
     @Override

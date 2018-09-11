@@ -57,37 +57,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         try {
             JSONObject data = json.getJSONObject("notification");
 
-
-            String title = data.getString("title");
-            String message = data.getString("body");
-            String icon = data.getString("icon");
-            JSONObject custom_data = data.getJSONObject("custom_data");
-
             if(!NotificationUtils.isAppIsInBackground(getApplicationContext()))
             {
                 Intent pushNotification = new Intent(Const.Params.FCM_PUSHING_MESSAGE);
                 pushNotification.putExtra("data", data.toString());
                 sendBroadcast(pushNotification);
             }else{
-                Class fragment;
-                String notification_type = custom_data.getString("notification_type");
-                switch (notification_type) {
-                    case "new_message":
-                        fragment = ChatActivity.class;
-                        break;
-                    case "visitor":
-                        String username = custom_data.getString("user_name");
-                        if (username.equals(""))
-                            username = "Soemone";
-                        message = username + "has visited your profile.";
-                        fragment = DisplayActivity.class;
-                        break;
-                    default:
-                        fragment = DisplayActivity.class;
-                        break;
-                }
-
-                NotificationUtils.MostrarNotificacion(getApplicationContext(), vibrator, title, message, icon,custom_data, fragment);
+                NotificationUtils.MostrarNotificacion(getApplicationContext(), data);
             }
 
         } catch (JSONException e) {
