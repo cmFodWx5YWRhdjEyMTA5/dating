@@ -79,6 +79,9 @@ dependencies {
                     details.useVersion '25.2.0'
                 }
             }
+            if (requested.group == 'in.arjsna') {
+                details.useVersion '1.0.2'
+            }
         }
     }
 
