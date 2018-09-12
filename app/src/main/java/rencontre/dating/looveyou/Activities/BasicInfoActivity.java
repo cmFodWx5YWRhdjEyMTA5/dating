@@ -96,16 +96,7 @@ public class BasicInfoActivity extends AppCompatActivity implements View.OnClick
                     try {
                         String data_ = intent.getStringExtra("data");
                         JSONObject data = new JSONObject(data_);
-                        JSONObject custom_data = data.getJSONObject("custom_data");
-
-                        if (custom_data.getString("notification_type").equals("new_message")) {
-
-                            String title = data.getString("title");
-                            String message = data.getString("body");
-                            String icon = data.getString("icon");
-                            unregisterReceiver(receiver);
-                            NotificationUtils.MostrarNotificacion(BasicInfoActivity.this, vibrator, title, message, icon, custom_data, ChatActivity.class);
-                        }
+                        NotificationUtils.MostrarNotificacion(BasicInfoActivity.this, data);
 
                     } catch (JSONException e) {
                         e.printStackTrace();

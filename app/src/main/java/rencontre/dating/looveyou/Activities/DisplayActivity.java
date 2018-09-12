@@ -217,14 +217,7 @@ public class DisplayActivity extends AppCompatActivity
                     try {
                         String data_ = intent.getStringExtra("data");
                         JSONObject data = new JSONObject(data_);
-                        JSONObject custom_data = data.getJSONObject("custom_data");
-                        if (custom_data.getString("notification_type").equals("new_message")) {
-
-                            unregisterReceiver(receiver);
-                            NotificationUtils.MostrarNotificacion(DisplayActivity.this, data);
-                        }else{
-                            NotificationUtils.MostrarNotificacion(DisplayActivity.this, data);
-                        }
+                        NotificationUtils.MostrarNotificacion(DisplayActivity.this, data);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -390,12 +383,20 @@ public class DisplayActivity extends AppCompatActivity
             transaction.replace(R.id.display_container, newFragment);
 
             transaction.commit();
+            try {
+                unregisterReceiver(receiver);
+            } catch (Exception e) {
+            }
         } else if (id == R.id.nav_encounter) {
             DisplayFragment newFragment = new DisplayFragment();
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             transaction.replace(R.id.display_container, newFragment);
 
             transaction.commit();
+            try {
+                unregisterReceiver(receiver);
+            } catch (Exception e) {
+            }
         } else if (id == R.id.nav_activity) {
             startActivity(new Intent(this, ActivityPageActivity.class));
         }

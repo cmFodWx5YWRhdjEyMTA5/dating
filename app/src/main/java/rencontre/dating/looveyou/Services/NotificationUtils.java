@@ -153,7 +153,7 @@ public class NotificationUtils {
 
     public static void MostrarNotificacion(final Context context, final Vibrator vibrator, final String titulo, final String message, String icon, final JSONObject extraData, final Class fragmento) {
 
-        final NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, "")
+        final NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context)
                 .setContentTitle(titulo)
                 .setContentText(message)
                 .setAutoCancel(true)
@@ -218,7 +218,7 @@ public class NotificationUtils {
                     fragment = DisplayActivity.class;
                     break;
             }
-            final NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, "")
+            final NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context)
                     .setContentTitle(title)
                     .setContentText(message)
                     .setAutoCancel(true)
@@ -231,7 +231,7 @@ public class NotificationUtils {
                 resultIntent.putExtra("receiverId", custom_data.getString("user_id"));
                 resultIntent.putExtra("receiverImageUrl", icon);
                 resultIntent.putExtra("receiverName", custom_data.getString("user_name"));
-                resultIntent.putExtra("contact_id", custom_data.getString("contact_id"));
+                /*resultIntent.putExtra("contact_id", custom_data.getString("contact_id"));*/
             }
 
             resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);

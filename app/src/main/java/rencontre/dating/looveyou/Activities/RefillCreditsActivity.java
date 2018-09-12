@@ -109,21 +109,11 @@ public class RefillCreditsActivity extends AppCompatActivity {
         receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 if (intent.getAction().equals(Const.Params.FCM_PUSHING_MESSAGE)) {
                     try {
                         String data_ = intent.getStringExtra("data");
                         JSONObject data = new JSONObject(data_);
-                        JSONObject custom_data = data.getJSONObject("custom_data");
-
-                        if (custom_data.getString("notification_type").equals("new_message")) {
-
-                            String title = data.getString("title");
-                            String message = data.getString("body");
-                            String icon = data.getString("icon");
-                            unregisterReceiver(receiver);
-                            NotificationUtils.MostrarNotificacion(RefillCreditsActivity.this, vibrator, title, message, icon, custom_data, ChatActivity.class);
-                        }
+                        NotificationUtils.MostrarNotificacion(RefillCreditsActivity.this, data);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
