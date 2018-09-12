@@ -383,20 +383,20 @@ public class DisplayActivity extends AppCompatActivity
             transaction.replace(R.id.display_container, newFragment);
 
             transaction.commit();
-            try {
+            /*try {
                 unregisterReceiver(receiver);
             } catch (Exception e) {
-            }
+            }*/
         } else if (id == R.id.nav_encounter) {
             DisplayFragment newFragment = new DisplayFragment();
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             transaction.replace(R.id.display_container, newFragment);
 
             transaction.commit();
-            try {
+            /*try {
                 unregisterReceiver(receiver);
             } catch (Exception e) {
-            }
+            }*/
         } else if (id == R.id.nav_activity) {
             startActivity(new Intent(this, ActivityPageActivity.class));
         }
